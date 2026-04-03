@@ -1,0 +1,77 @@
+name: Build & Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  build-and-deploy:
+    name: Build Vite app and deploy to taylormadeestimates.com
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout source code ──────────────────────────────────────────
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Node.js ────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # ── 3. Install pnpm ──────────────────────────────────────────────────
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # ── 4. Cache pnpm store ──────────────────────────────────────────────
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # ── 5. Install dependencies ──────────────────────────────────────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── 6. Build the Vite app ────────────────────────────────────────────
+      - name: Build
+        run: pnpm run build
+        env:
+          # Vite analytics vars — set these as repo secrets if needed
+          VITE_ANALYTICS_ENDPOINT: ${{ secrets.VITE_ANALYTICS_ENDPOINT || '' }}
+          VITE_ANALYTICS_WEBSITE_ID: ${{ secrets.VITE_ANALYTICS_WEBSITE_ID || '' }}
+          VITE_APP_ID: taylormade-estimates
+          VITE_APP_TITLE: Taylor Made Estimates
+          VITE_FRONTEND_FORGE_API_KEY: ${{ secrets.VITE_FRONTEND_FORGE_API_KEY || '' }}
+          VITE_FRONTEND_FORGE_API_URL: ${{ secrets.VITE_FRONTEND_FORGE_API_URL || '' }}
+
+      # ── 7. Add CNAME for custom domain ───────────────────────────────────
+      - name: Add CNAME for custom domain
+        run: echo "www.taylormadeestimates.com" > dist/public/CNAME
+
+      # ── 8. Deploy to taylormadeestimates.com repo ────────────────────────
+      - name: Deploy to GitHub Pages repo
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.DEPLOY_TOKEN }}
+        with:
+          source-directory: dist/public
+          destination-github-username: iamabotama
+          destination-repository-name: taylormadeestimates.com
+          target-branch: main
+          commit-message: "Deploy: ${{ github.sha }} — ${{ github.event.head_commit.message }}"
+          user-email: melissa@taylormadeestimates.com
+          user-name: Taylor Made Estimates CI
