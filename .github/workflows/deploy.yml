@@ -25,8 +25,6 @@ jobs:
       # ── 3. Install pnpm ──────────────────────────────────────────────────
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       # ── 4. Cache pnpm store ──────────────────────────────────────────────
       - name: Get pnpm store directory
