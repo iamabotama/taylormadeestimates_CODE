@@ -5,7 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch: # Allow manual trigger from GitHub Actions UI
-
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   build-and-deploy:
     name: Build Vite app and deploy to taylormadeestimates.com
@@ -20,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       # ── 3. Install pnpm ──────────────────────────────────────────────────
       - name: Install pnpm
