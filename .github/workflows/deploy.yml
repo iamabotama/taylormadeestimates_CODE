@@ -61,7 +61,11 @@ jobs:
       - name: Add CNAME for custom domain
         run: echo "www.taylormadeestimates.com" > dist/public/CNAME
 
-      # ── 8. Deploy to taylormadeestimates.com repo ────────────────────────
+      # ── 8. Add 404.html for SPA client-side routing ───────────────────────
+      - name: Add 404.html for SPA routing
+        run: cp dist/public/index.html dist/public/404.html
+
+      # ── 9. Deploy to taylormadeestimates.com repo ────────────────────────
       - name: Deploy to GitHub Pages repo
         uses: cpina/github-action-push-to-another-repository@main
         env:
