@@ -168,6 +168,13 @@ export default function Navigation() {
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem" }}>(619) 955-4588</span>
             </a>
             <a
+              href="/login"
+              className="px-4 py-2.5 border border-[oklch(0.28_0.09_152)] text-[oklch(0.28_0.09_152)] text-sm font-semibold rounded-md hover:bg-[oklch(0.94_0.03_152)] transition-all duration-200"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              Client Portal
+            </a>
+            <a
               href="#contact"
               onClick={(e) => { e.preventDefault(); handleNavClick("#contact"); }}
               className="px-5 py-2.5 bg-[oklch(0.28_0.09_152)] text-white text-sm font-semibold rounded-md hover:bg-[oklch(0.22_0.07_152)] transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
@@ -215,6 +222,13 @@ export default function Navigation() {
             >
               <Phone className="w-4 h-4" />
               Call Us
+            </a>
+            <a
+              href="/login"
+              className="block w-full text-center px-5 py-3 border border-[oklch(0.28_0.09_152)] text-[oklch(0.28_0.09_152)] text-sm font-semibold rounded-md hover:bg-[oklch(0.94_0.03_152)] transition-colors"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              Client Portal
             </a>
             <a
               href="#contact"
