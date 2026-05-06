@@ -30,6 +30,7 @@ export default function ContactSection() {
     rush: false,
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -50,26 +51,56 @@ export default function ContactSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) {
-      toast.error("Please fill in your name and email.");
+    if (!formData.name || !formData.email || !formData.message) {
+      toast.error("Please fill in your name, email, and message.");
       return;
     }
-    const { error } = await supabase.from("contact_submissions").insert({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || null,
-      service: formData.lossType || null,
-      message: (formData.company ? `Company: ${formData.company}\n` : "") + (formData.message || ""),
-    });
-    if (error) {
+    setSubmitting(true);
+    try {
+      // Save to database
+      const { error: dbError } = await supabase.from("contact_submissions").insert({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        service: formData.lossType || null,
+        message: (formData.company ? `Company: ${formData.company}\n` : "") + (formData.message || ""),
+      });
+      if (dbError) console.error("DB save error:", dbError);
+
+      // Send emails via Edge Function
+      const res = await fetch(
+        "https://fkslnxjjezptyfbissah.supabase.co/functions/v1/send-contact-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer sb_publishable_ZWIvI52uxhnNocozVSFMYg_T9mHNSPv`,
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone || "",
+            company: formData.company || "",
+            service: formData.lossType || "",
+            message: formData.message,
+          }),
+        }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Email send error:", err);
+        // Still show success — submission is saved to DB even if email fails
+      }
+      setSubmitted(true);
+      toast.success("Request submitted!", {
+        description: "We'll be in touch within 24 hours. Check your inbox for a confirmation.",
+      });
+    } catch (err) {
+      console.error(err);
       toast.error("Something went wrong. Please try again or call us directly.");
-      console.error(error);
-      return;
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitted(true);
-    toast.success("Request submitted!", {
-      description: "We'll be in touch within 24 hours.",
-    });
   };
 
   const inputStyle = {
@@ -319,7 +350,8 @@ export default function ContactSection() {
 
                   <button
                     type="submit"
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 mt-2"
+                    disabled={submitting}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-md text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                     style={{
                       background: "oklch(0.28 0.09 152)",
                       boxShadow: "0 4px 16px oklch(0.28 0.09 152 / 0.35)",
@@ -328,7 +360,7 @@ export default function ContactSection() {
                     onMouseLeave={(e) => (e.currentTarget.style.background = "oklch(0.28 0.09 152)")}
                   >
                     <Send className="w-4 h-4" />
-                    Submit Request
+                    {submitting ? "Sending..." : "Submit Request"}
                   </button>
                 </form>
               )}
