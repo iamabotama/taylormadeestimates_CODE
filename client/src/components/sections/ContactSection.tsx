@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Mail, Phone, Clock, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 const lossTypeOptions = [
   "Water Mitigation",
@@ -47,13 +48,24 @@ export default function ContactSection() {
     return () => observer.disconnect();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email) {
       toast.error("Please fill in your name and email.");
       return;
     }
-    // Simulate form submission
+    const { error } = await supabase.from("contact_submissions").insert({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || null,
+      service: formData.lossType || null,
+      message: (formData.company ? `Company: ${formData.company}\n` : "") + (formData.message || ""),
+    });
+    if (error) {
+      toast.error("Something went wrong. Please try again or call us directly.");
+      console.error(error);
+      return;
+    }
     setSubmitted(true);
     toast.success("Request submitted!", {
       description: "We'll be in touch within 24 hours.",
