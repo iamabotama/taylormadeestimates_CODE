@@ -69,7 +69,7 @@ export default function ContactSection() {
 
       // Send emails via Edge Function
       const res = await fetch(
-        "https://fkslnxjjezptyfbissah.supabase.co/functions/v1/send-contact-email",
+        "https://fkslnxjjezptyfbissah.supabase.co/functions/v1/rapid-task",
         {
           method: "POST",
           headers: {
