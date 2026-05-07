@@ -1,12 +1,21 @@
 /* =============================================================
    CONTACT SECTION — Taylor Made Estimates
    Quote request form + contact info
+   EmailJS integration: service_s39hy1t
+     - Melissa notification: template_nas4u9j
+     - Customer auto-reply: template_lhuraln
    ============================================================= */
 
 import { useEffect, useRef, useState } from "react";
 import { Mail, Phone, Clock, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import emailjs from "@emailjs/browser";
+
+const EMAILJS_SERVICE_ID = "service_s39hy1t";
+const EMAILJS_NOTIFICATION_TEMPLATE = "template_nas4u9j"; // → Melissa
+const EMAILJS_AUTOREPLY_TEMPLATE = "template_lhuraln";    // → Customer
+const EMAILJS_PUBLIC_KEY = "7MAUXrwDQPGPtsq58";
 
 const lossTypeOptions = [
   "Water Mitigation",
@@ -57,7 +66,7 @@ export default function ContactSection() {
     }
     setSubmitting(true);
     try {
-      // Save to database
+      // 1. Save to Supabase database
       const { error: dbError } = await supabase.from("contact_submissions").insert({
         name: formData.name,
         email: formData.email,
@@ -67,30 +76,33 @@ export default function ContactSection() {
       });
       if (dbError) console.error("DB save error:", dbError);
 
-      // Send emails via Edge Function
-      const res = await fetch(
-        "https://fkslnxjjezptyfbissah.supabase.co/functions/v1/rapid-task",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer sb_publishable_ZWIvI52uxhnNocozVSFMYg_T9mHNSPv`,
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone || "",
-            company: formData.company || "",
-            service: formData.lossType || "",
-            message: formData.message,
-          }),
-        }
+      // Shared template params
+      const templateParams = {
+        from_name: formData.name,
+        from_email: formData.email,
+        phone: formData.phone || "Not provided",
+        service: formData.lossType || "Not specified",
+        message: (formData.company ? `Company: ${formData.company}\n\n` : "") +
+                 formData.message +
+                 (formData.rush ? "\n\n⚡ RUSH SERVICE REQUESTED" : ""),
+      };
+
+      // 2. Send notification email to Melissa
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_NOTIFICATION_TEMPLATE,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
       );
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.error("Email send error:", err);
-        // Still show success — submission is saved to DB even if email fails
-      }
+
+      // 3. Send auto-reply to customer
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_AUTOREPLY_TEMPLATE,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
       setSubmitted(true);
       toast.success("Request submitted!", {
         description: "We'll be in touch within 24 hours. Check your inbox for a confirmation.",
